@@ -1,1 +1,2 @@
-# MastersProject
+# Encoding Audio as a Spaciotemporal Graph
+This project aims to explore the benefits and drawbacks of encoding audio as a dynamic graph. It will use the Short-Time Fouier Transform to bin the audio in terms of frequency and time components. From this, the audio signal can be reconstructed. This reconstruction will be compared to the original signal and a signal encoded as a static grpah in terms of accuary and energy preservation. The goal of this project is to determine if encoding time can improve the accuary of an encoded signal.
