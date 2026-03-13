@@ -22,7 +22,7 @@ def plot_audio(audio, fs):
     plt.title("Audio Signal")
     plt.show()
 
-def build_time_slice_graphs(Zxx, r=4, eps=1e-12):
+def build_time_slice_graphs(Zxx, r=4):
     F, T = Zxx.shape
     graphs = []
 
@@ -33,6 +33,7 @@ def build_time_slice_graphs(Zxx, r=4, eps=1e-12):
         den = float(np.sum(a*a) + eps)
 
         G = nx.Graph()  # undirected local-frequency graph
+        G.graph["ref_phase"] = np.angle(Zxx[0, k])
 
         # nodes: frequency bins
         for i in range(F):
@@ -54,11 +55,41 @@ def build_time_slice_graphs(Zxx, r=4, eps=1e-12):
 
     return graphs
 
+def reconstruct_Zxx_from_graphs(graphs):
+    T = len(graphs)
+    F = graphs[0].number_of_nodes()
+    Zxx_hat = np.zeros((F, T), dtype=np.complex128)
+
+    for k, G in enumerate(graphs):
+        amps = np.array([G.nodes[i]["amp"] for i in range(F)], dtype=float)
+        phases = np.full(F, np.nan, dtype=float)
+
+        # reference phase for node 0
+        phases[0] = G.graph.get("ref_phase", 0.0)
+
+        # propagate phases through the graph
+        stack = [0]
+        visited = {0}
+
+        while stack:
+            i = stack.pop()
+            for j in G.neighbors(i):
+                if j not in visited:
+                    w = G.edges[i, j]["weight"]  # complex
+                    delta = np.angle(w)          # phi_i - phi_j
+                    phases[j] = phases[i] - delta
+                    visited.add(j)
+                    stack.append(j)
+
+        # build STFT slice
+        Zxx_hat[:, k] = amps * np.exp(1j * phases)
+
+    return Zxx_hat
 
 audio_files = ["tone.wav"]
 for file in audio_files:
     audio, fs = load_audio(file)
-    #plot_audio(audio, fs)
+    plot_audio(audio, fs)
     frame_ms = 25
     hop_ms = 10
     frame_len = int(round(frame_ms * 1e-3 * fs))
@@ -67,8 +98,16 @@ for file in audio_files:
     n_frames = 1 + (len(audio) - frame_len) // hop_len
     frames = np.stack([audio[i * hop_len : i * hop_len + frame_len] for i in range(n_frames)], axis=0)
 
-    #Compute STFT (magnitude)
-    freq, time, Zxx = scipy.signal.stft(frames, fs, nperseg=frame_len, noverlap=frame_len - hop_len, boundary='zeros')
+    #Build the graphs
+    #TO DO: Add hann window
+    freq, time, Zxx = scipy.signal.stft(frames, fs, nperseg=frame_len, noverlap=frame_len-hop_len, boundary='zeros')
     Zxx = Zxx[:, :, 0] #get the first channel
-    graphs = build_time_slice_graphs(Zxx, r=4, eps=1e-12)
+
+    graphs = build_time_slice_graphs(Zxx, r=4)
     print(f"Built {len(graphs)} time-slice graphs, each with {len(graphs[0].nodes)} nodes and {len(graphs[0].edges)} edges.")
+
+    #Reconstruct the signal from the graphs
+    Zxx_hat=reconstruct_Zxx_from_graphs(graphs)
+    _, x_rec = scipy.signal.istft(Zxx_hat, fs=fs, noverlap=frame_len-hop_len)
+    plot_audio(x_rec, fs)
+    sf.write("./reconstructed_audio_signals/tone_reconstructed.wav", x_rec, fs)
