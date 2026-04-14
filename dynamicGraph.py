@@ -8,8 +8,17 @@ import torch.nn.functional as F
 from torch_geometric.data import Data
 from laion_clap import CLAP_Module
 
+
 clap=CLAP_Module(enable_fusion=False)
 clap.load_ckpt()
+
+def safe_load_audio(path: str):
+    try:
+        waveform, sr = torchaudio.load(path)
+        return waveform, sr
+    except Exception as e:
+        print(f"Skipping {path}: {e}")
+        return None, None
 
 def audio_embedding(waveform, sr):
     if waveform.shape[0] > 1:
@@ -38,6 +47,12 @@ def build_embedding_matrix(audio_list):
 def build_knn_graph(x: torch.Tensor, k: int = 10):
     #cosine similarity matrix because x is normalized
     sim=x @ x.T  #[N, N]
+    #flatten, exclude diagonals
+    values=sim[~torch.eye(sim.size(0), dtype=bool)]
+    threshold=torch.quantile(values, 0.3)
+    threshold = torch.quantile(sim, 0.3).item()
+    print("Threshold: ", threshold)
+    #threshold=0
 
     N=x.size(0)
     edges=[]
@@ -49,13 +64,15 @@ def build_knn_graph(x: torch.Tensor, k: int = 10):
         for val, j in zip(vals.tolist(), idx.tolist()):
             if i==j:
                 continue
-            edges.append([i, j])
-            weights.append([val])
+            if val > threshold:
+                edges.append([i, j])
+                weights.append([val])
 
     edge_index=torch.tensor(edges, dtype=torch.long).t().contiguous()
     edge_attr=torch.tensor(weights, dtype=torch.float32)
 
     return edge_index, edge_attr
+
 
 def build_inter_audio_graph(audio_list, k: int = 10):
     x=build_embedding_matrix(audio_list)
@@ -67,6 +84,7 @@ def build_inter_audio_graph(audio_list, k: int = 10):
         edge_attr=edge_attr,
     )
     return graph
+
 
 def neighbors(G, i):
     src = G.edge_index[0]
@@ -89,7 +107,8 @@ def top_neighbors(G, i, k=5):
     pairs = sorted(pairs, key=lambda x: x[1], reverse=True)
     return pairs[:k]
 
-folders=["tone", "music", "singing", "speech"]
+
+folders=["country", "hiphop", "rnb", "pop", "rock"]
 
 audio_list = []
 #position in  the list indicates the node # in the graph
@@ -97,22 +116,25 @@ audio_list = []
 labels=[]
 filenames=[]
 filenames_mapping={}
+labels_mapping={}
 
-for i, folder in enumerate(folders):
-    filepath="audio_signals/" + folder
+for folder in folders:
+    filepath="music/" + folder
     files=os.listdir(filepath)
-    
+
+    #IMPORTANT: this only works if the audio files do not get out of order    
     for i, file in enumerate(files):
         print("Loading Audio File "+ file)
         path = filepath + "/" + file
-        waveform, sr = torchaudio.load(path)
+        waveform, sr = safe_load_audio(path)
         audio_list.append((waveform, sr))
         labels.append(folder)
-        name=folder + str(i)
+        firstTwo=folder[:2]
+        name=firstTwo + str(i)
         filenames.append(name)
         filenames_mapping[name]=file
+        i+=1
 
-random.shuffle(audio_list)
 G=build_inter_audio_graph(audio_list, k=5)
 G.soundtype=labels
 G.filename=filenames
@@ -128,6 +150,6 @@ print(sim_values.min())
 print(sim_values.mean())
 print(sim_values.max())
 
-torch.save(G, "graphData/graph1/graph1.pt")
-with open("graphData/graph1/graph1.json", "w") as f:
+torch.save(G, "graphData/graph4/graph4.pt")
+with open("graphData/graph4/graph4.json", "w") as f:
     json.dump(filenames_mapping, f, indent=2)
