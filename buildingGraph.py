@@ -52,7 +52,6 @@ def build_knn_graph(x: torch.Tensor, k: int = 10):
     threshold=torch.quantile(values, 0.3)
     threshold = torch.quantile(sim, 0.3).item()
     print("Threshold: ", threshold)
-    #threshold=0
 
     N=x.size(0)
     edges=[]
@@ -108,7 +107,7 @@ def top_neighbors(G, i, k=5):
     return pairs[:k]
 
 
-folders=["country", "hiphop", "rnb", "pop", "rock"]
+folders=["pop", "rock", "hiphop", "rnb", "country"]
 
 audio_list = []
 #position in  the list indicates the node # in the graph
@@ -135,7 +134,7 @@ for folder in folders:
         filenames_mapping[name]=file
         i+=1
 
-G=build_inter_audio_graph(audio_list, k=5)
+G=build_inter_audio_graph(audio_list, k=10)
 G.soundtype=labels
 G.filename=filenames
 
@@ -150,6 +149,6 @@ print(sim_values.min())
 print(sim_values.mean())
 print(sim_values.max())
 
-torch.save(G, "graphData/graph4/graph4.pt")
-with open("graphData/graph4/graph4.json", "w") as f:
+torch.save(G, "graphData/music10/music10.pt")
+with open("graphData/music10/music10.json", "w") as f:
     json.dump(filenames_mapping, f, indent=2)

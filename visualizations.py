@@ -1,6 +1,5 @@
 import torch
 import sys
-import json
 import networkx as nx
 from torch_geometric.utils import to_networkx
 import matplotlib.pyplot as plt
@@ -16,11 +15,11 @@ def printGraph(G):
     }
 
     color_map={
-        "country": "blue",
-        "hiphop": "green",
-        "rnb": "yellow",
-        "pop": "red",
-        "rock": "grey"
+        "pop": "blue",
+        "rock": "green",
+        "country": "yellow",
+        "rnb": "red",
+        "hiphop": "grey",
     }
     node_colors = [color_map[nx_graph.nodes[n]['soundtype']] for n in nx_graph.nodes]
 
@@ -67,9 +66,8 @@ def heatmap(G):
     plt.tight_layout()
     plt.show()
 
-
 commands=sys.argv
-G=torch.load("graphData/graph4/graph4.pt", weights_only=False)
+G=torch.load("graphData/music10/music10.pt", weights_only=False)
 
 if "p" in commands:
     printGraph(G)

@@ -1,5 +1,4 @@
 {
-  "to0": "tone.wav",
   "mu0": "145716__einkabebop__rawr.mp3",
   "mu1": "262502__gipsyga__scary.mp3",
   "mu2": "336076__snapper4298__credits5.wav",
@@ -27,5 +26,6 @@
   "sp6": "343678__dpsa__sp07_exhibition_sn10.wav",
   "sp7": "369908__germanio__male-speech.wav",
   "sp8": "450205__miguelgc96__speech_camaron.wav",
-  "sp9": "805918__shawn200110__malespeechsample.wav"
+  "sp9": "805918__shawn200110__malespeechsample.wav",
+  "to0": "tone.wav"
 }

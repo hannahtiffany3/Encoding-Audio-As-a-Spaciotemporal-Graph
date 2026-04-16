@@ -1,0 +1,9 @@
+Communities 1
+Modularity:  0.3627495808565767
+Sihlouette Score:  0.0011631937231868505
+Davies-Bouldin:  2.492704453418722
+
+Communities 2
+Modularity:  0.37105624142661175
+Sihlouette Score:  0.0011631937231868505
+Davies-Bouldin:  2.492704453418722
