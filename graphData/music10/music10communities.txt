@@ -1,0 +1,4 @@
+Communities 1
+Modularity:  0.0
+Sihlouette Score:  -0.009525517001748085
+Davies-Bouldin:  2.575572167858298
